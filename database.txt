@@ -1,0 +1,52 @@
+-- tietokantakaavio
+users
+├── id                INT PRIMARY KEY
+├── name              VARCHAR
+├── email             VARCHAR UNIQUE
+├── password_hash     VARCHAR
+├── role              ENUM('patient', 'professional')
+└── created_at        TIMESTAMP
+
+measurements
+├── id                INT PRIMARY KEY
+├── user_id           INT → users.id
+├── recorded_at       TIMESTAMP        ← milloin mitattu
+├── duration_seconds  INT              ← mittauksen kesto
+├── rri_data          JSON             ← raakadata Polar H10:ltä
+└── created_at        TIMESTAMP
+
+analyses
+├── id                INT PRIMARY KEY
+├── measurement_id    INT → measurements.id
+├── readiness         FLOAT            ← Kubios readiness-pisteet
+├── rmssd_ms          FLOAT
+├── sdnn_ms           FLOAT
+├── pns_index         FLOAT
+├── sns_index         FLOAT
+├── stress_index      FLOAT
+├── mean_hr_bpm       FLOAT
+├── artefact_level    VARCHAR          ← 'GOOD' / 'MODERATE' / 'POOR'
+├── timevarying_data  JSON             ← aikasarjadata kaavioihin
+├── sleep_duration_h  FLOAT
+├── sleep_score       INT              ← laskettu pistearvo 0-100
+└── created_at        TIMESTAMP
+
+professional_access
+├── id                INT PRIMARY KEY
+├── patient_id        INT → users.id
+├── professional_id   INT → users.id
+├── granted_at        TIMESTAMP        ← milloin käyttäjä hyväksyi
+└── revoked_at        TIMESTAMP        ← NULL jos voimassa (UC_7)
+
+--taulujen väliset suhteet:
+users ──────────────── measurements
+  │         1 käyttäjä voi     │
+  │         olla monella       │
+  │         mittauksella       │
+  │                            │
+  │                       analyses
+  │                  1 mittaus → 1 analyysi
+  │
+  └── professional_access
+        patient_id → users.id
+        professional_id → users.id
