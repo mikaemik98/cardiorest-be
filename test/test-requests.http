@@ -1,0 +1,23 @@
+@apiurl = http://localhost:3000
+
+### Register new user
+POST {{apiurl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Matti Meikäläinen",
+  "email": "matti3@test.com",
+  "password": "salakala",
+  "role": "patient"
+}
+
+###
+
+### Login
+POST {{apiurl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "matti3@test.com",
+  "password": "salakala"
+}
