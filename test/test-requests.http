@@ -11,8 +11,6 @@ Content-Type: application/json
   "role": "patient"
 }
 
-###
-
 ### Login
 POST {{apiurl}}/api/auth/login
 Content-Type: application/json
