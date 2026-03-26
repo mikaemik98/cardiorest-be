@@ -1,21 +1,63 @@
-@apiurl = http://localhost:3000
+@apiurl = http://127.0.0.1:3000
 
-### Register new user
+### Register
 POST {{apiurl}}/api/auth/register
 Content-Type: application/json
 
-{
-  "name": "Matti Meikäläinen",
-  "email": "matti3@test.com",
-  "password": "salakala",
-  "role": "patient"
-}
+{"name":"Testi","email":"test6@test.com","password":"salakala","role":"patient"}
+
+###
 
 ### Login
 POST {{apiurl}}/api/auth/login
 Content-Type: application/json
 
+{"email":"test6@test.com","password":"salakala"}
+
+###
+
+### GET Profile - kopioi token login Body.token Bearer <token>
+GET {{apiurl}}/api/users/profile
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### 
+
+### PATCH
+PATCH {{apiurl}}/api/users/profile
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{"name":"Updated"}
+
+###
+
+### DELETE Account - Poistaa tilin pysyvästi!
+DELETE {{apiurl}}/api/users/profile
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Kubios Login (käytä omia tunnuksia!)
+POST {{apiurl}}/api/auth/login
+Content-Type: application/json
+
 {
-  "email": "matti3@test.com",
-  "password": "salakala"
+  "username": "YOUR_KUBIOS_USERNAME",
+  "password": "YOUR_KUBIOS_PASSWORD"
 }
+
+###
+
+### Get Me (Bearer + login-token!)
+GET {{apiurl}}/api/users/profile
+Authorization: Bearer YOUR_KUBIOS_JWT_TOKEN_HERE
+
+### Kubios User Data (mittaukset JSON) - Bearer + login-token
+GET {{apiurl}}/api/kubios/user-data
+Authorization: Bearer YOUR_KUBIOS_JWT_TOKEN_HERE
+
+###
+
+### Kubios User Info
+GET {{apiurl}}/api/kubios/user-info
+Authorization: Bearer YOUR_KUBIOS_JWT_TOKEN_HERE
+
+### Uusi! Testaa login jälkeen (kopioi token).

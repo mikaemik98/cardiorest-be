@@ -21,7 +21,7 @@ const postRegister = async (req, res) => {
   // Hashataan salasana
   const hash = await bcrypt.hash(password, 10);
   // Tallennetaan käyttäjä
-  const result = await addUser({name, email, password: hash, role});
+  const result = await addUser({name, email, password_hash: hash, role});
   if (result.error) {
     return res.status(500).json({error: result.error});
   }

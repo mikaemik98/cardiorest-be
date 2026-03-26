@@ -1,5 +1,6 @@
 import {Router} from 'express';
-import {postRegister, postLogin} from '../controllers/authController.js';
+import {postRegister} from '../controllers/authController.js';
+import {postLogin, getMe} from '../controllers/kubios-auth-controller.js';
  
 const router = Router();
 
