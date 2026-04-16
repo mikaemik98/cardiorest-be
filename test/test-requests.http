@@ -4,7 +4,7 @@
 POST {{apiurl}}/api/auth/register
 Content-Type: application/json
 
-{"name":"Testi","email":"test6@test.com","password":"salakala","role":"patient"}
+{"name":"Testi","email":"test9@test.com","password":"salakala","role":"patient"}
 
 ###
 
@@ -12,14 +12,13 @@ Content-Type: application/json
 POST {{apiurl}}/api/auth/login
 Content-Type: application/json
 
-{"email":"test6@test.com","password":"salakala"}
+{"email":"test9@test.com","password":"salakala"}
 
 ###
 
 ### GET Profile - kopioi token login Body.token Bearer <token>
 GET {{apiurl}}/api/users/profile
-Authorization: Bearer YOUR_JWT_TOKEN_HERE
-
+Authorization: Bearer token tähä
 ### 
 
 ### PATCH
@@ -35,25 +34,21 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 DELETE {{apiurl}}/api/users/profile
 Authorization: Bearer YOUR_JWT_TOKEN_HERE
 
+###
 ### Kubios Login (käytä omia tunnuksia!)
-POST {{apiurl}}/api/auth/login
+POST {{apiurl}}/api/auth/kubios-login
 Content-Type: application/json
 
 {
-  "username": "YOUR_KUBIOS_USERNAME",
-  "password": "YOUR_KUBIOS_PASSWORD"
+  "username": "",
+  "password": ""
 }
-
-###
-
 ### Get Me (Bearer + login-token!)
 GET {{apiurl}}/api/users/profile
-Authorization: Bearer YOUR_KUBIOS_JWT_TOKEN_HERE
-
+Authorization: Bearer 
 ### Kubios User Data (mittaukset JSON) - Bearer + login-token
 GET {{apiurl}}/api/kubios/user-data
-Authorization: Bearer YOUR_KUBIOS_JWT_TOKEN_HERE
-
+Authorization: Bearer token tähä
 ###
 
 ### Kubios User Info
@@ -61,3 +56,36 @@ GET {{apiurl}}/api/kubios/user-info
 Authorization: Bearer YOUR_KUBIOS_JWT_TOKEN_HERE
 
 ### Uusi! Testaa login jälkeen (kopioi token).
+
+### Sleep Diary - Lisää merkintä (kopioi token loginista!)
+POST {{apiurl}}/api/sleep-diary
+Content-Type: application/json
+Authorization: Bearer token tähä
+
+{
+  "date": "2026-04-15",
+  "bedtime": "23:00",
+  "wake_time": "07:00",
+  "sleep_quality": "hyvin",
+  "exercise": "jonkin verran",
+  "mood": "hyvä",
+  "comment": "Nukuin ihan hyvin, heräsin kerran yöllä"
+}
+
+###
+
+### Sleep Diary - Hae kaikki omat merkinnät
+GET {{apiurl}}/api/sleep-diary
+Authorization: Bearer token tähä
+
+###
+
+### Synkkaa Kubios-data tietokantaan (käytä kubios-login tokenia!)
+POST {{apiurl}}/api/analyses/sync
+Authorization: Bearer token tähä
+
+###
+
+### Hae tallennetut analyysit
+GET {{apiurl}}/api/analyses
+Authorization: Bearer token tähä
