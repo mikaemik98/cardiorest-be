@@ -21,6 +21,7 @@ app.use('/api/kubios', kubiosRouter);
 
 
 
+
 // Testataan että palvelin toimii
 app.get("/", (req, res) => {
   res.json({ message: "CardioRest backend toimii" });
@@ -29,3 +30,12 @@ app.get("/", (req, res) => {
 app.listen(PORT, hostname, () => {
   console.log(`Palvelin käynnissä portissa http://${hostname}:${PORT}/`);
 });
+
+// Tuodaan unipäiväkirjan reititin
+import sleepDiaryRouter from './routes/sleepDiary.js';
+
+// Rekisteröidään reitti — kaikki /api/sleep-diary alkavat pyynnöt ohjataan tänne
+app.use('/api/sleep-diary', sleepDiaryRouter);
+
+import analysisRouter from './routes/analysis.js';
+app.use('/api/analyses', analysisRouter);

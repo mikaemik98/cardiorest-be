@@ -4,7 +4,7 @@
  * @exports postLogin
  * @exports getMe
  */
-
+console.log('LOGIN URL:', process.env.KUBIOS_LOGIN_URL);
  //import 'dotenv/config';
  import jwt from 'jsonwebtoken';
  import fetch from 'node-fetch';
@@ -49,15 +49,14 @@ import { addUser, selectUserByEmail } from '../models/User.js';
      response = await fetch(process.env.KUBIOS_LOGIN_URL, options);
    } catch (err) {
      console.error('Kubios login error', err);
-     throw new Error('Login with Kubios failed', 500);
+     throw new Error('Login with Kubios failed');
    }
-   const location = response.headers.raw().location[0];
+  const location = response.headers.get('location');
    // console.log(location);
    // If login fails, location contains 'login?null'
    if (location.includes('login?null')) {
      throw new Error(
-       'Login with Kubios failed due bad username/password',
-       401,
+       'Login with Kubios failed due bad username/password'
      );
    }
    // If login success, Kubios response location header
@@ -86,7 +85,7 @@ import { addUser, selectUserByEmail } from '../models/User.js';
    if (responseJson.status === 'ok') {
      return responseJson.user;
    } else {
-     throw new Error('Kubios user info failed', 500);
+     throw new Error('Kubios user info failed');
    }
  };
 
@@ -99,7 +98,7 @@ import { addUser, selectUserByEmail } from '../models/User.js';
  const syncWithLocalUser = async (kubiosUser) => {
    // Check if user exists in local db
    let userId;
- const result = await selectUserByEmail(kubiosUser.email);
+   const result = await selectUserByEmail(kubiosUser.email);
    console.log('selectUserByEmail result:', result);
    // If user with the email not found, create new user, otherwise use existing
    if (result.error) {
