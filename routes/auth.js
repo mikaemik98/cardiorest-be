@@ -5,7 +5,7 @@ import {postLogin as kubiosPostLogin, getMe} from '../controllers/kubios-auth-co
 const router = Router();
 
 router.post('/register', postRegister);
-router.post('/login', postLogin);           // tavallinen login
+router.post('/login', kubiosPostLogin);           // tavallinen login
 router.post('/kubios-login', kubiosPostLogin); // kubios login
 
 export default router;

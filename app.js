@@ -32,10 +32,10 @@ app.listen(PORT, hostname, () => {
 });
 
 // Tuodaan unipäiväkirjan reititin
-import sleepDiaryRouter from './routes/sleepDiary.js';
+//import sleepDiaryRouter from './routes/sleepDiary.js';
 
 // Rekisteröidään reitti — kaikki /api/sleep-diary alkavat pyynnöt ohjataan tänne
-app.use('/api/sleep-diary', sleepDiaryRouter);
+//app.use('/api/sleep-diary', sleepDiaryRouter);
 
 import analysisRouter from './routes/analysis.js';
 app.use('/api/analyses', analysisRouter);
