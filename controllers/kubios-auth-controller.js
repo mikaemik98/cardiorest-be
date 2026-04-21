@@ -1,130 +1,128 @@
 /**
-  * Authentication resource controller using Kubios API for login
+ * Authentication resource controller using Kubios API for login
  * @module controllers/auth-controller
  * @exports postLogin
  * @exports getMe
  */
 console.log('LOGIN URL:', process.env.KUBIOS_LOGIN_URL);
- //import 'dotenv/config';
- import jwt from 'jsonwebtoken';
- import fetch from 'node-fetch';
- import {v4} from 'uuid';
- //import {customError} from '../middlewares/error-handler.js';
- // customError function not created in this project
-import { addUser, selectUserByEmail } from '../models/User.js';
- import {v4 as uuidv4} from 'uuid';
+//import 'dotenv/config';
+import jwt from 'jsonwebtoken';
+import fetch from 'node-fetch';
+import {v4} from 'uuid';
+//import {customError} from '../middlewares/error-handler.js';
+// customError function not created in this project
+import {addUser, selectUserByEmail} from '../models/User.js';
+import {v4 as uuidv4} from 'uuid';
 
- // Kubios API base URL should be set in .env
- const baseUrl = process.env.KUBIOS_API_URI;
+// Kubios API base URL should be set in .env
+const baseUrl = process.env.KUBIOS_API_URI;
 
- /**
+/**
  * Creates a POST login request to Kubios API
  * @async
  * @param {string} username Username in Kubios
  * @param {string} password Password in Kubios
  * @return {string} idToken Kubios id token
  */
- const kubiosLogin = async (username, password) => {
-   const csrf = v4();
-   const headers = new Headers();
-   headers.append('Cookie', `XSRF-TOKEN=${csrf}`);
-   headers.append('User-Agent', process.env.KUBIOS_USER_AGENT);
-   const searchParams = new URLSearchParams();
-   searchParams.set('username', username);
-   searchParams.set('password', password);
-   searchParams.set('client_id', process.env.KUBIOS_CLIENT_ID);
-   searchParams.set('redirect_uri', process.env.KUBIOS_REDIRECT_URI);
-   searchParams.set('response_type', 'token');
-   searchParams.set('scope', 'openid');
-   searchParams.set('_csrf', csrf);
+const kubiosLogin = async (username, password) => {
+  const csrf = v4();
+  const headers = new Headers();
+  headers.append('Cookie', `XSRF-TOKEN=${csrf}`);
+  headers.append('User-Agent', process.env.KUBIOS_USER_AGENT);
+  const searchParams = new URLSearchParams();
+  searchParams.set('username', username);
+  searchParams.set('password', password);
+  searchParams.set('client_id', process.env.KUBIOS_CLIENT_ID);
+  searchParams.set('redirect_uri', process.env.KUBIOS_REDIRECT_URI);
+  searchParams.set('response_type', 'token');
+  searchParams.set('scope', 'openid');
+  searchParams.set('_csrf', csrf);
 
-   const options = {
-     method: 'POST',
-     headers: headers,
-     redirect: 'manual',
-     body: searchParams,
-   };
-   let response;
-   try {
-     response = await fetch(process.env.KUBIOS_LOGIN_URL, options);
-   } catch (err) {
-     console.error('Kubios login error', err);
-     throw new Error('Login with Kubios failed');
-   }
+  const options = {
+    method: 'POST',
+    headers: headers,
+    redirect: 'manual',
+    body: searchParams,
+  };
+  let response;
+  try {
+    response = await fetch(process.env.KUBIOS_LOGIN_URL, options);
+  } catch (err) {
+    console.error('Kubios login error', err);
+    throw new Error('Login with Kubios failed');
+  }
   const location = response.headers.get('location');
-   // console.log(location);
-   // If login fails, location contains 'login?null'
-   if (location.includes('login?null')) {
-     throw new Error(
-       'Login with Kubios failed due bad username/password'
-     );
-   }
-   // If login success, Kubios response location header
-   // contains id_token, access_token and expires_in
-   const regex = /id_token=(.*)&access_token=(.*)&expires_in=(.*)/;
-   const match = location.match(regex);
-   const idToken = match[1];
-   return idToken;
- };
+  // console.log(location);
+  // If login fails, location contains 'login?null'
+  if (location.includes('login?null')) {
+    throw new Error('Login with Kubios failed due bad username/password');
+  }
+  // If login success, Kubios response location header
+  // contains id_token, access_token and expires_in
+  const regex = /id_token=(.*)&access_token=(.*)&expires_in=(.*)/;
+  const match = location.match(regex);
+  const idToken = match[1];
+  return idToken;
+};
 
- /**
+/**
  * Get user info from Kubios API
  * @async
  * @param {string} idToken Kubios id token
  * @return {object} user User info
  */
- const kubiosUserInfo = async (idToken) => {
-   const headers = new Headers();
-   headers.append('User-Agent', process.env.KUBIOS_USER_AGENT);
-   headers.append('Authorization', idToken);
-   const response = await fetch(baseUrl + '/user/self', {
-     method: 'GET',
-     headers: headers,
-   });
-   const responseJson = await response.json();
-   if (responseJson.status === 'ok') {
-     return responseJson.user;
-   } else {
-     throw new Error('Kubios user info failed');
-   }
- };
+const kubiosUserInfo = async (idToken) => {
+  const headers = new Headers();
+  headers.append('User-Agent', process.env.KUBIOS_USER_AGENT);
+  headers.append('Authorization', idToken);
+  const response = await fetch(baseUrl + '/user/self', {
+    method: 'GET',
+    headers: headers,
+  });
+  const responseJson = await response.json();
+  if (responseJson.status === 'ok') {
+    return responseJson.user;
+  } else {
+    throw new Error('Kubios user info failed');
+  }
+};
 
- /**
+/**
  * Sync Kubios user info with local db
  * @async
  * @param {object} kubiosUser User info from Kubios API
  * @return {number} userId User id in local db
  */
- const syncWithLocalUser = async (kubiosUser) => {
-   // Check if user exists in local db
-   let userId;
-   const result = await selectUserByEmail(kubiosUser.email);
-   console.log('selectUserByEmail result:', result);
-   // If user with the email not found, create new user, otherwise use existing
-   if (result.error) {
-     // Create user
-     const newUser = {
-       name: kubiosUser.email,
-       email: kubiosUser.email,
-       // Random password, quick workaround for the required field
-       password_hash: v4(),
-       role: 'patient'
-     };
-     const newUserResult = await addUser(newUser);
-     if (newUserResult.user_id) {
-       userId = newUserResult.user_id;
-     } else {
-       console.error('addUser failed:', newUserResult);
-     }
-   } else {
-     userId = result.id;
-     console.log('Using existing userId:', userId);
-   }
-   console.log('syncWithLocalUser userId', userId);
-   return userId;
- };
+const syncWithLocalUser = async (kubiosUser) => {
+  // Check if user exists in local db
+  let userId;
+  const result = await selectUserByEmail(kubiosUser.email);
+  console.log('selectUserByEmail result:', result);
+  // If user with the email not found, create new user, otherwise use existing
+  if (result.error) {
+    // Create user
+    const newUser = {
+      name: kubiosUser.email,
+      email: kubiosUser.email,
+      // Random password, quick workaround for the required field
+      password_hash: v4(),
+      role: 'patient',
+    };
+    const newUserResult = await addUser(newUser);
+    if (newUserResult.user_id) {
+      userId = newUserResult.user_id;
+    } else {
+      console.error('addUser failed:', newUserResult);
+    }
+  } else {
+    userId = result.id;
+    console.log('Using existing userId:', userId);
+  }
+  console.log('syncWithLocalUser userId', userId);
+  return userId;
+};
 
- /**
+/**
  * User login
  * @async
  * @param {object} req
@@ -132,48 +130,67 @@ import { addUser, selectUserByEmail } from '../models/User.js';
  * @param {function} next
  * @return {object} user if username & password match
  */
- const postLogin = async (req, res, next) => {
-   const {username, password} = req.body;
-   // console.log('login', req.body);
-   try {
-     // Try to login with Kubios
-     const kubiosIdToken = await kubiosLogin(username, password);
-     const kubiosUser = await kubiosUserInfo(kubiosIdToken);
-     const localUserId = await syncWithLocalUser(kubiosUser);
-     console.log('localUserId after sync:', localUserId);
-     if (!localUserId) {
-       return res.status(500).json({error: 'Local user sync failed, userId undefined'});
-     }
-     // Include kubiosIdToken in the auth token used in this app
-     const token = jwt.sign(
-       {userId: localUserId, kubiosIdToken: kubiosIdToken},
-       process.env.JWT_SECRET,
-       {
-         expiresIn: process.env.JWT_EXPIRES_IN,
-       },
-     );
-     return res.json({
-       message: 'Logged in successfully with Kubios',
-       user: kubiosUser,
-       user_id: localUserId,
-       token,
-     });
-   } catch (err) {
-     console.error('Kubios login error', err);
-     return next(err);
-   }
- };
+const postLogin = async (req, res, next) => {
+  const {username, password} = req.body;
+  // console.log('login', req.body);
+  try {
+    // Try to login with Kubios
+    const kubiosIdToken = await kubiosLogin(username, password);
+    const kubiosUser = await kubiosUserInfo(kubiosIdToken);
+    const localUserId = await syncWithLocalUser(kubiosUser);
+    console.log('localUserId after sync:', localUserId);
+    if (!localUserId) {
+      return res
+        .status(500)
+        .json({error: 'Local user sync failed, userId undefined'});
+    }
+    // Include kubiosIdToken in the auth token used in this app
+    const token = jwt.sign(
+      {userId: localUserId, kubiosIdToken: kubiosIdToken},
+      process.env.JWT_SECRET,
+      {
+        expiresIn: process.env.JWT_EXPIRES_IN,
+      },
+    );
 
- /**
+    // tarkista onko kirjautuva käyttäjä Elsi (KUBIOS_USERNAME_2)
+    // jos on, synkronoi timevarying data
+    if (username === process.env.KUBIOS_USERNAME_2) {
+      console.log('Elsi kirjautui, synkronoidaan timevarying data');
+      try {
+        // importoi syncTimevaryingData
+        const {syncTimevaryingDataInternal} =
+          await import('./kubios-controller.js');
+        await syncTimevaryingDataInternal(localUserId);
+        console.log('Timevarying data synkronoitu');
+      } catch (syncErr) {
+        // ei kaadeta kirjautumista vaikka synkronointi epäonnistuu
+        console.error('Timevarying synkronointi epäonnistui:', syncErr.message);
+      }
+    }
+
+    return res.json({
+      message: 'Logged in successfully with Kubios',
+      user: kubiosUser,
+      user_id: localUserId,
+      token,
+    });
+  } catch (err) {
+    console.error('Kubios login error', err);
+    return next(err);
+  }
+};
+
+/**
  * Get user info based on token
  * @async
  * @param {object} req
  * @param {object} res
  * @return {object} user info
  */
- const getMe = async (req, res) => {
-   const user = await getUserById(req.user.userId);
-   res.json({user, kubios_token: req.user.kubiosIdToken});
- };
+const getMe = async (req, res) => {
+  const user = await getUserById(req.user.userId);
+  res.json({user, kubios_token: req.user.kubiosIdToken});
+};
 
- export {postLogin, getMe};
+export {postLogin, getMe};
