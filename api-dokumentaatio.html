@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardioRest API Documentation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e29;
+    --border: #252a38;
+    --accent: #e05c4b;
+    --accent2: #4b8de0;
+    --green: #4be08a;
+    --yellow: #e0c94b;
+    --purple: #a04be0;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* Layout */
+  .layout { display: flex; min-height: 100vh; }
+
+  nav {
+    width: 260px;
+    min-width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 2rem 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .nav-logo {
+    padding: 0 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+  .nav-logo h1 { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; }
+  .nav-logo span { color: var(--accent); }
+  .nav-logo p { font-size: 0.7rem; color: var(--muted); font-family: var(--mono); margin-top: 0.25rem; }
+
+  .nav-section { margin-bottom: 1.5rem; }
+  .nav-section-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 0 1.5rem 0.5rem;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1.5rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item .method-badge {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    font-weight: 600;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    min-width: 38px;
+    text-align: center;
+  }
+
+  main { flex: 1; max-width: 900px; padding: 3rem 2.5rem; }
+
+  /* Hero */
+  .hero {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-tag {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  .hero h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 0.75rem;
+  }
+  .hero p { color: var(--muted); font-size: 0.95rem; max-width: 560px; }
+  .base-url {
+    margin-top: 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+  }
+  .base-url span { color: var(--muted); font-size: 0.7rem; }
+
+  /* Section */
+  .section { margin-bottom: 3rem; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .section-header h2 { font-size: 1.2rem; font-weight: 700; }
+  .section-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem;
+  }
+
+  /* Auth info box */
+  .auth-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent2);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 2rem;
+    font-size: 0.85rem;
+  }
+  .auth-box h3 { font-size: 0.8rem; font-weight: 700; color: var(--accent2); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .auth-box code { font-family: var(--mono); background: var(--surface2); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.78rem; }
+
+  /* Endpoint card */
+  .endpoint {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+  .endpoint-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .endpoint-header:hover { background: var(--surface2); }
+  .endpoint-path {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    flex: 1;
+  }
+  .endpoint-path .base { color: var(--muted); }
+  .endpoint-desc { font-size: 0.8rem; color: var(--muted); margin-left: auto; }
+  .auth-required {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--accent2);
+    background: rgba(75, 141, 224, 0.1);
+    border: 1px solid rgba(75, 141, 224, 0.2);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+  }
+
+  .endpoint-body {
+    border-top: 1px solid var(--border);
+    padding: 1.25rem;
+    display: none;
+  }
+  .endpoint.open .endpoint-body { display: block; }
+  .endpoint.open .endpoint-header { background: var(--surface2); }
+
+  /* Method badge */
+  .badge {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    min-width: 52px;
+    text-align: center;
+  }
+  .badge.GET    { background: rgba(75, 224, 138, 0.15); color: var(--green);  border: 1px solid rgba(75, 224, 138, 0.2); }
+  .badge.POST   { background: rgba(75, 141, 224, 0.15); color: var(--accent2); border: 1px solid rgba(75, 141, 224, 0.2); }
+  .badge.PATCH  { background: rgba(224, 201, 75, 0.15); color: var(--yellow); border: 1px solid rgba(224, 201, 75, 0.2); }
+  .badge.DELETE { background: rgba(224, 92, 75, 0.15);  color: var(--accent); border: 1px solid rgba(224, 92, 75, 0.2); }
+
+  /* Tables */
+  .param-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 0.5rem; }
+  .param-table th {
+    text-align: left;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .param-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .param-table tr:last-child td { border-bottom: none; }
+  .param-table code { font-family: var(--mono); font-size: 0.78rem; color: var(--accent2); }
+  .param-table .type { font-family: var(--mono); font-size: 0.75rem; color: var(--purple); }
+  .required { color: var(--accent); font-size: 0.65rem; font-family: var(--mono); }
+
+  /* Sub-sections */
+  .sub-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin: 1rem 0 0.4rem;
+  }
+
+  /* Code block */
+  pre {
+    background: #080a0f;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    overflow-x: auto;
+    line-height: 1.6;
+    color: #c9d1d9;
+    margin-top: 0.5rem;
+  }
+  .key { color: #79b8ff; }
+  .str { color: #9ecbff; }
+  .num { color: #f8c555; }
+  .bool { color: var(--green); }
+
+  /* Error/success badges */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    margin-right: 0.4rem;
+    margin-bottom: 0.4rem;
+  }
+  .status-2xx { background: rgba(75, 224, 138, 0.1); color: var(--green); border: 1px solid rgba(75, 224, 138, 0.2); }
+  .status-4xx { background: rgba(224, 92, 75, 0.1); color: var(--accent); border: 1px solid rgba(224, 92, 75, 0.2); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- Sidebar -->
+<nav>
+  <div class="nav-logo">
+    <h1>Cardio<span>Rest</span></h1>
+    <p>API v1.0.0 · feature/diary</p>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Authentication</div>
+    <a class="nav-item" href="#auth-register"><span class="method-badge badge POST">POST</span>/register</a>
+    <a class="nav-item" href="#auth-login"><span class="method-badge badge POST">POST</span>/login</a>
+    <a class="nav-item" href="#auth-kubios"><span class="method-badge badge POST">POST</span>/kubios-login</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Users</div>
+    <a class="nav-item" href="#user-profile-get"><span class="method-badge badge GET">GET</span>/profile</a>
+    <a class="nav-item" href="#user-profile-patch"><span class="method-badge badge PATCH">PATCH</span>/profile</a>
+    <a class="nav-item" href="#user-profile-delete"><span class="method-badge badge DELETE">DELETE</span>/profile</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Diary</div>
+    <a class="nav-item" href="#diary-post"><span class="method-badge badge POST">POST</span>/diary</a>
+    <a class="nav-item" href="#diary-get-all"><span class="method-badge badge GET">GET</span>/diary</a>
+    <a class="nav-item" href="#diary-get-one"><span class="method-badge badge GET">GET</span>/diary/:id</a>
+    <a class="nav-item" href="#diary-patch"><span class="method-badge badge PATCH">PATCH</span>/diary/:id</a>
+    <a class="nav-item" href="#diary-delete"><span class="method-badge badge DELETE">DELETE</span>/diary/:id</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Analysis</div>
+    <a class="nav-item" href="#analysis-sync"><span class="method-badge badge POST">POST</span>/sync</a>
+    <a class="nav-item" href="#analysis-get"><span class="method-badge badge GET">GET</span>/analysis</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Kubios</div>
+    <a class="nav-item" href="#kubios-userdata"><span class="method-badge badge GET">GET</span>/user-data</a>
+    <a class="nav-item" href="#kubios-userinfo"><span class="method-badge badge GET">GET</span>/user-info</a>
+    <a class="nav-item" href="#kubios-sync"><span class="method-badge badge POST">POST</span>/sync-timevarying</a>
+    <a class="nav-item" href="#kubios-timevarying"><span class="method-badge badge GET">GET</span>/timevarying</a>
+  </div>
+</nav>
+
+<!-- Main content -->
+<main>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-tag">REST API Reference</div>
+    <h1>CardioRest API</h1>
+    <p>Backend API for diary management, HRV analysis, measurements and Kubios integration. All protected endpoints require a Bearer token.</p>
+    <div class="base-url">
+      <span>Base URL</span>
+      http://localhost:3000/api
+    </div>
+  </div>
+
+  <!-- Auth info -->
+  <div class="auth-box">
+    <h3>🔐 Authentication</h3>
+    <p>Suojatut endpointit vaativat JWT-tokenin HTTP-headerissä:<br><br>
+    <code>Authorization: Bearer &lt;token&gt;</code><br><br>
+    Token saadaan kirjautumisesta (<code>POST /auth/login</code>). Virheellinen tai puuttuva token palauttaa <strong>401 Unauthorized</strong>.</p>
+  </div>
+
+  <!-- ─── AUTHENTICATION ─── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(224,92,75,0.15);">🔑</div>
+      <h2>Authentication</h2>
+    </div>
+
+    <!-- Register -->
+    <div class="endpoint" id="auth-register">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span>
+        <span class="endpoint-path"><span class="base">/auth</span>/register</span>
+        <span class="endpoint-desc">Rekisteröi uusi käyttäjä</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="sub-label">Request Body</div>
+        <table class="param-table">
+          <tr><th>Kenttä</th><th>Tyyppi</th><th>Pakollinen</th><th>Kuvaus</th></tr>
+          <tr><td><code>name</code></td><td class="type">String</td><td><span class="required">✱</span></td><td>Käyttäjänimi</td></tr>
+          <tr><td><code>email</code></td><td class="type">String</td><td><span class="required">✱</span></td><td>Sähköpostiosoite</td></tr>
+          <tr><td><code>password</code></td><td class="type">String</td><td><span class="required">✱</span></td><td>Salasana</td></tr>
+
+        </table>
+
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">201 Created</span>
+        <span class="status-badge status-4xx">400 Bad Request</span>
+        <pre><span class="key">"message"</span>: <span class="str">"Rekisteröinti onnistui"</span>,
+<span class="key">"user_id"</span>: <span class="num">1</span></pre>
+        <pre>// 400 — puuttuvia kenttiä
+<span class="key">"error"</span>: <span class="str">"Kaikki kentät ovat pakollisia (name, email, password, role)"</span></pre>
+      </div>
+    </div>
+
+    <!-- Login -->
+    <div class="endpoint" id="auth-login">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span>
+        <span class="endpoint-path"><span class="base">/auth</span>/login</span>
+        <span class="endpoint-desc">Kirjautuminen, palauttaa JWT</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="sub-label">Request Body</div>
+        <table class="param-table">
+          <tr><th>Kenttä</th><th>Tyyppi</th><th>Pakollinen</th><th>Kuvaus</th></tr>
+          <tr><td><code>username</code></td><td class="type">String</td><td><span class="required">✱</span></td><td>Käyttäjätunnus / sähköposti</td></tr>
+          <tr><td><code>password</code></td><td class="type">String</td><td><span class="required">✱</span></td><td>Salasana</td></tr>
+        </table>
+
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <span class="status-badge status-4xx">401 Unauthorized</span>
+        <pre><span class="key">"token"</span>: <span class="str">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</span>,
+<span class="key">"user"</span>: {
+  <span class="key">"user_id"</span>: <span class="num">1</span>,
+  <span class="key">"name"</span>: <span class="str">"Matti Meikäläinen"</span>,
+  <span class="key">"email"</span>: <span class="str">"matti@example.com"</span>,
+  <span class="key">"role"</span>: <span class="str">"patient"</span>
+}</pre>
+      </div>
+    </div>
+
+    <!-- Kubios Login -->
+    <div class="endpoint" id="auth-kubios">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span>
+        <span class="endpoint-path"><span class="base">/auth</span>/kubios-login</span>
+        <span class="endpoint-desc">Kubios-kirjautuminen</span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:0.83rem; color: var(--muted); margin-bottom: 0.75rem;">Kirjautuu Kubios-palveluun ja tallentaa Kubios-session tokenin. Tarvitaan ennen Kubios-datan hakemista.</p>
+        <div class="sub-label">Request Body</div>
+        <table class="param-table">
+          <tr><th>Kenttä</th><th>Tyyppi</th><th>Pakollinen</th><th>Kuvaus</th></tr>
+          <tr><td><code>username</code></td><td class="type">String</td><td><span class="required">✱</span></td><td>Kubios-käyttäjätunnus</td></tr>
+          <tr><td><code>password</code></td><td class="type">String</td><td><span class="required">✱</span></td><td>Kubios-salasana</td></tr>
+        </table>
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <span class="status-badge status-4xx">500 Internal Server Error</span>
+        <pre>// 500 — Kubios-kirjautuminen epäonnistui
+<span class="key">"error"</span>: <span class="str">"Login with Kubios failed"</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ─── USERS ─── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(75,141,224,0.15);">👤</div>
+      <h2>Users</h2>
+    </div>
+
+    <div class="endpoint" id="user-profile-get">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span>
+        <span class="endpoint-path"><span class="base">/users</span>/profile</span>
+        <span class="auth-required">🔐 token</span>
+        <span class="endpoint-desc">Hae oma profiili</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <span class="status-badge status-4xx">401 Unauthorized</span>
+        <pre><span class="key">"profile"</span>: {
+  <span class="key">"id"</span>: <span class="num">1</span>,
+  <span class="key">"name"</span>: <span class="str">"Matti Meikäläinen"</span>,
+  <span class="key">"email"</span>: <span class="str">"matti@example.com"</span>,
+  <span class="key">"role"</span>: <span class="str">"patient"</span>,
+  <span class="key">"created_at"</span>: <span class="str">"2026-04-29T10:00:00.000Z"</span>
+}</pre>
+      </div>
+    </div>
+
+    <div class="endpoint" id="user-profile-patch">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span>
+        <span class="endpoint-path"><span class="base">/users</span>/profile</span>
+        <span class="auth-required">🔐 token</span>
+        <span class="endpoint-desc">Päivitä profiili</span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:0.83rem; color: var(--muted); margin-bottom:0.75rem;">Voidaan lähettää vain muutettavat kentät. Roolia tai salasanaa ei voi muuttaa tätä kautta.</p>
+        <div class="sub-label">Request Body</div>
+        <table class="param-table">
+          <tr><th>Kenttä</th><th>Tyyppi</th><th>Pakollinen</th><th>Kuvaus</th></tr>
+          <tr><td><code>name</code></td><td class="type">String</td><td>—</td><td>Uusi nimi</td></tr>
+          <tr><td><code>email</code></td><td class="type">String</td><td>—</td><td>Uusi sähköposti (täytyy olla uniikki)</td></tr>
+        </table>
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <span class="status-badge status-4xx">400 Bad Request</span>
+        <span class="status-badge status-4xx">401 Unauthorized</span>
+        <pre><span class="key">"success"</span>: <span class="bool">true</span></pre>
+        <pre>// 400 — sähköposti jo käytössä
+<span class="key">"error"</span>: <span class="str">"Sähköposti on jo käytössä toisella käyttäjällä"</span></pre>
+      </div>
+    </div>
+
+    <div class="endpoint" id="user-profile-delete">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge DELETE">DELETE</span>
+        <span class="endpoint-path"><span class="base">/users</span>/profile</span>
+        <span class="auth-required">🔐 token</span>
+        <span class="endpoint-desc">Poista oma tili</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <span class="status-badge status-4xx">401 Unauthorized</span>
+        <pre><span class="key">"success"</span>: <span class="bool">true</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ─── DIARY ─── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(75,224,138,0.15);">📓</div>
+      <h2>Diary</h2>
+    </div>
+
+    <div class="endpoint" id="diary-post">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span>
+        <span class="endpoint-path"><span class="base">/diary</span>/</span>
+        <span class="auth-required">🔐 token</span>
+        <span class="endpoint-desc">Luo uusi merkintä</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="sub-label">Request Body</div>
+        <table class="param-table">
+          <tr><th>Kenttä</th><th>Tyyppi</th><th>Pakollinen</th><th>Kuvaus</th></tr>
+          <tr><td><code>entry_date</code></td><td class="type">String</td><td><span class="required">✱</span></td><td>Päivämäärä (ISO 8601, esim. <code>2026-04-29</code>)</td></tr>
+          <tr><td><code>content</code></td><td class="type">String</td><td><span class="required">✱</span></td><td>Merkinnän teksti</td></tr>
+          <tr><td><code>mood</code></td><td class="type">String</td><td>—</td><td>Mieliala (vapaaehtoinen)</td></tr>
+        </table>
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">201 Created</span>
+        <span class="status-badge status-4xx">401 Unauthorized</span>
+        <pre><span class="key">"id"</span>: <span class="num">42</span></pre>
+      </div>
+    </div>
+
+    <div class="endpoint" id="diary-get-all">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span>
+        <span class="endpoint-path"><span class="base">/diary</span>/</span>
+        <span class="auth-required">🔐 token</span>
+        <span class="endpoint-desc">Hae kaikki omat merkinnät</span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:0.83rem; color: var(--muted); margin-bottom:0.75rem;">Palauttaa kirjautuneen käyttäjän kaikki merkinnät uusimmasta vanhimpaan.</p>
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <pre>[
+  {
+    <span class="key">"id"</span>: <span class="num">42</span>,
+    <span class="key">"user_id"</span>: <span class="num">1</span>,
+    <span class="key">"entry_date"</span>: <span class="str">"2026-04-29"</span>,
+    <span class="key">"content"</span>: <span class="str">"Tänään meni hyvin..."</span>,
+    <span class="key">"mood"</span>: <span class="str">"hyvä"</span>,
+    <span class="key">"created_at"</span>: <span class="str">"2026-04-29T10:00:00.000Z"</span>
+  }
+]</pre>
+      </div>
+    </div>
+
+    <div class="endpoint" id="diary-get-one">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span>
+        <span class="endpoint-path"><span class="base">/diary</span>/:id</span>
+        <span class="auth-required">🔐 token</span>
+        <span class="endpoint-desc">Hae yksittäinen merkintä</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="sub-label">URL-parametrit</div>
+        <table class="param-table">
+          <tr><th>Parametri</th><th>Tyyppi</th><th>Kuvaus</th></tr>
+          <tr><td><code>id</code></td><td class="type">Number</td><td>Merkinnän ID</td></tr>
+        </table>
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <span class="status-badge status-4xx">404 Not Found</span>
+        <pre>{
+  <span class="key">"id"</span>: <span class="num">42</span>,
+  <span class="key">"user_id"</span>: <span class="num">1</span>,
+  <span class="key">"entry_date"</span>: <span class="str">"2026-04-29"</span>,
+  <span class="key">"content"</span>: <span class="str">"Tänään meni hyvin..."</span>,
+  <span class="key">"mood"</span>: <span class="str">"hyvä"</span>,
+  <span class="key">"created_at"</span>: <span class="str">"2026-04-29T10:00:00.000Z"</span>
+}</pre>
+      </div>
+    </div>
+
+    <div class="endpoint" id="diary-patch">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge PATCH">PATCH</span>
+        <span class="endpoint-path"><span class="base">/diary</span>/:id</span>
+        <span class="auth-required">🔐 token</span>
+        <span class="endpoint-desc">Päivitä merkintä</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="sub-label">URL-parametrit</div>
+        <table class="param-table">
+          <tr><th>Parametri</th><th>Tyyppi</th><th>Kuvaus</th></tr>
+          <tr><td><code>id</code></td><td class="type">Number</td><td>Merkinnän ID</td></tr>
+        </table>
+        <div class="sub-label">Request Body — vähintään yksi</div>
+        <table class="param-table">
+          <tr><th>Kenttä</th><th>Tyyppi</th><th>Kuvaus</th></tr>
+          <tr><td><code>entry_date</code></td><td class="type">String</td><td>Uusi päivämäärä</td></tr>
+          <tr><td><code>content</code></td><td class="type">String</td><td>Uusi sisältö</td></tr>
+          <tr><td><code>mood</code></td><td class="type">String</td><td>Uusi mieliala</td></tr>
+        </table>
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <span class="status-badge status-4xx">400 Bad Request</span>
+        <span class="status-badge status-4xx">404 Not Found</span>
+        <pre><span class="key">"success"</span>: <span class="bool">true</span></pre>
+        <pre>// 400 — ei päivitettäviä kenttiä
+<span class="key">"error"</span>: <span class="str">"Ei päivitettäviä kenttiä"</span></pre>
+      </div>
+    </div>
+
+    <div class="endpoint" id="diary-delete">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge DELETE">DELETE</span>
+        <span class="endpoint-path"><span class="base">/diary</span>/:id</span>
+        <span class="auth-required">🔐 token</span>
+        <span class="endpoint-desc">Poista merkintä</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="sub-label">URL-parametrit</div>
+        <table class="param-table">
+          <tr><th>Parametri</th><th>Tyyppi</th><th>Kuvaus</th></tr>
+          <tr><td><code>id</code></td><td class="type">Number</td><td>Merkinnän ID</td></tr>
+        </table>
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <span class="status-badge status-4xx">404 Not Found</span>
+        <pre><span class="key">"success"</span>: <span class="bool">true</span></pre>
+        <pre>// 404 — merkintää ei löydy tai ei oikeutta
+<span class="key">"error"</span>: <span class="str">"Merkintää ei löytynyt tai ei oikeutta poistaa"</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ─── ANALYSIS ─── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(160,75,224,0.15);">📊</div>
+      <h2>Analysis</h2>
+    </div>
+
+    <div class="endpoint" id="analysis-sync">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span>
+        <span class="endpoint-path"><span class="base">/analysis</span>/sync</span>
+        <span class="auth-required">🔐 token</span>
+        <span class="endpoint-desc">Synkronoi analyysit Kubioksesta</span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:0.83rem; color: var(--muted); margin-bottom:0.75rem;">Hakee HRV-analyysit Kubios-palvelusta ja tallentaa ne paikalliseen tietokantaan. <strong>Vaatii, että Kubios-kirjautuminen on tehty ensin</strong> (<code>POST /auth/kubios-login</code>).</p>
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <span class="status-badge status-4xx">401 Unauthorized</span>
+        <span class="status-badge status-4xx">500 Internal Server Error</span>
+        <pre><span class="key">"synced"</span>: <span class="num">3</span>,
+<span class="key">"message"</span>: <span class="str">"Analyysit synkronoitu"</span></pre>
+      </div>
+    </div>
+
+    <div class="endpoint" id="analysis-get">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span>
+        <span class="endpoint-path"><span class="base">/analysis</span>/</span>
+        <span class="auth-required">🔐 token</span>
+        <span class="endpoint-desc">Hae tallennetut analyysit</span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:0.83rem; color: var(--muted); margin-bottom:0.75rem;">Palauttaa paikallisesta tietokannasta haetut HRV-analyysit.</p>
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <pre>[
+  {
+    <span class="key">"id"</span>: <span class="num">1</span>,
+    <span class="key">"measurement_id"</span>: <span class="num">5</span>,
+    <span class="key">"readiness"</span>: <span class="num">82.5</span>,
+    <span class="key">"rmssd_ms"</span>: <span class="num">45.3</span>,
+    <span class="key">"sdnn_ms"</span>: <span class="num">58.1</span>,
+    <span class="key">"pns_index"</span>: <span class="num">1.2</span>,
+    <span class="key">"sns_index"</span>: <span class="num">-0.5</span>,
+    <span class="key">"stress_index"</span>: <span class="num">12.3</span>,
+    <span class="key">"mean_hr_bpm"</span>: <span class="num">62</span>,
+    <span class="key">"artefact_level"</span>: <span class="num">0.02</span>,
+    <span class="key">"sleep_duration_h"</span>: <span class="num">7.5</span>,
+    <span class="key">"sleep_score"</span>: <span class="num">78</span>,
+    <span class="key">"timevarying_data"</span>: { <span class="str">...</span> }
+  }
+]</pre>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ─── KUBIOS ─── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(224,201,75,0.15);">💓</div>
+      <h2>Kubios</h2>
+    </div>
+    <p style="font-size:0.83rem; color:var(--muted); margin-bottom:1.25rem;">Kaikki Kubios-endpointit vaativat sekä paikallisen JWT-tokenin että aktiivisen Kubios-session.</p>
+
+    <div class="endpoint" id="kubios-userdata">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span>
+        <span class="endpoint-path"><span class="base">/kubios</span>/user-data</span>
+        <span class="auth-required">🔐 token</span>
+        <span class="endpoint-desc">Hae Kubios-käyttäjädata</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <span class="status-badge status-4xx">401 Unauthorized</span>
+        <pre><span class="key">"user_data"</span>: { <span class="str">... Kubios user data ...</span> }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint" id="kubios-userinfo">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span>
+        <span class="endpoint-path"><span class="base">/kubios</span>/user-info</span>
+        <span class="auth-required">🔐 token</span>
+        <span class="endpoint-desc">Hae Kubios-käyttäjäinfo</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <span class="status-badge status-4xx">401 Unauthorized</span>
+        <pre><span class="key">"user_info"</span>: { <span class="str">... Kubios user info ...</span> }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint" id="kubios-sync">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge POST">POST</span>
+        <span class="endpoint-path"><span class="base">/kubios</span>/sync-timevarying</span>
+        <span class="auth-required">🔐 token</span>
+        <span class="endpoint-desc">Synkronoi aikavariantti-data</span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:0.83rem; color: var(--muted); margin-bottom:0.75rem;">Hakee aikavariantin HRV-datan Kubioksesta ja tallentaa sen tietokantaan.</p>
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <span class="status-badge status-4xx">401 Unauthorized</span>
+        <pre><span class="key">"message"</span>: <span class="str">"Timevarying data synced"</span></pre>
+      </div>
+    </div>
+
+    <div class="endpoint" id="kubios-timevarying">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="badge GET">GET</span>
+        <span class="endpoint-path"><span class="base">/kubios</span>/timevarying</span>
+        <span class="auth-required">🔐 token</span>
+        <span class="endpoint-desc">Hae aikavariantti-data</span>
+      </div>
+      <div class="endpoint-body">
+        <p style="font-size:0.83rem; color: var(--muted); margin-bottom:0.75rem;">Palauttaa tietokantaan tallennetun aikavariantin HRV-datan.</p>
+        <div class="sub-label">Responses</div>
+        <span class="status-badge status-2xx">200 OK</span>
+        <pre>[
+  {
+    <span class="key">"id"</span>: <span class="num">1</span>,
+    <span class="key">"user_id"</span>: <span class="num">1</span>,
+    <span class="key">"recorded_at"</span>: <span class="str">"2026-04-29T08:00:00.000Z"</span>,
+    <span class="key">"duration_seconds"</span>: <span class="num">300</span>,
+    <span class="key">"rri_data"</span>: [<span class="num">800</span>, <span class="num">820</span>, <span class="num">810</span>, <span class="str">...</span>]
+  }
+]</pre>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+  function toggle(header) {
+    const endpoint = header.parentElement;
+    endpoint.classList.toggle('open');
+  }
+
+  // Open first endpoint in each section by default
+  document.querySelectorAll('.section .endpoint:first-of-type').forEach(ep => {
+    ep.classList.add('open');
+  });
+
+  // Smooth scroll for nav links
+  document.querySelectorAll('a.nav-item').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (!target.classList.contains('open')) target.classList.add('open');
+      }
+    });
+  });
+</script>
+</body>
+</html>
