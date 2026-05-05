@@ -35,7 +35,7 @@ const kubiosLogin = async (username, password) => {
   searchParams.set('client_id', process.env.KUBIOS_CLIENT_ID);
   searchParams.set('redirect_uri', process.env.KUBIOS_REDIRECT_URI);
   searchParams.set('response_type', 'token');
-  searchParams.set('scope', 'openid');
+  searchParams.set('access_type', 'openid');
   searchParams.set('_csrf', csrf);
 
   const options = {
@@ -132,6 +132,8 @@ const syncWithLocalUser = async (kubiosUser) => {
  */
 const postLogin = async (req, res, next) => {
   const {username, password} = req.body;
+  console.log('Login attempt username:', username);
+  console.log('Login attempt password length:', password?.length);
   // console.log('login', req.body);
   try {
     // Try to login with Kubios
