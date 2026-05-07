@@ -230,12 +230,13 @@ const syncTimeVaryingData = async (req, res, next) => {
 const getTimevaryingData = async (req, res, next) => {
   try {
     const [rows] = await pool.query(
-      `SELECT a.timevarying_data, a.readiness, a.rmssd_ms, m.recorded_at
-       FROM analyses a
-       JOIN measurements m ON a.measurement_id = m.id
-       WHERE a.timevarying_data IS NOT NULL
-       ORDER BY m.recorded_at DESC
-       LIMIT 1`,
+      `SELECT a.timevarying_data, a.readiness, a.rmssd_ms,
+     DATE_FORMAT(m.recorded_at, '%Y-%m-%dT%H:%i:%s') as recorded_at
+     FROM analyses a
+     JOIN measurements m ON a.measurement_id = m.id
+     WHERE a.timevarying_data IS NOT NULL
+     ORDER BY m.recorded_at DESC
+     LIMIT 1`,
     );
 
     if (!rows.length) {
