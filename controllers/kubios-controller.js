@@ -250,7 +250,7 @@ const getTimevaryingData = async (req, res, next) => {
 
     // Lisää +3h offset UTC → Suomi
     const recordedAtDate = new Date(row.recorded_at);
-    recordedAtDate.setHours(recordedAtDate.getHours() + 3);
+    recordedAtDate.setHours(recordedAtDate.getHours() - 3);
 
     return res.json({
       recorded_at: recordedAtDate.toISOString(),
