@@ -1,52 +1,62 @@
+// Koodissa hyödynnetty tekoälyä Claude Sonnet v4.6 koodin rakentamiseen ja tarkistamiseen, sekä ymmärtämiseen
+
 import {validationResult} from 'express-validator';
 
 /**
-* Custom middleware for handling and formatting validation errors
-* @param {object} req - request object
-* @param {object} res - response object
-* @param {function} next - next function
-* @return {*} next function call
-*/
+ * Middleware syötteiden validointivirheiden käsittelyyn.
+ * Tarkistaa express-validatorin tulokset ja välittää virheet errorHandlerille.
+ * @param {Request} req
+ * @param {Response} res
+ * @param {NextFunction} next
+ */
 const validationErrorHandler = (req, res, next) => {
+  // Tarkistetaan vain request bodyn validointivirheet
   const errors = validationResult(req, {strictParams: ['body']});
+
   if (!errors.isEmpty()) {
-    // console.log('validation errors', errors.array({onlyFirstError: true}));
     const error = new Error('Bad Request');
     error.status = 400;
-    error.errors = errors.array({onlyFirstError: true}).map((error) => {
-      return {field: error.path, message: error.msg};
-    });
+    // Muotoillaan virheet {field, message}-muotoon, yksi virhe per kenttä
+    error.errors = errors.array({onlyFirstError: true}).map((error) => ({
+      field: error.path,
+      message: error.msg,
+    }));
     return next(error);
   }
+
   next();
 };
 
 /**
- * Default middleware for 404 requests
- *
- * @param {*} req
- * @param {*} res
- * @param {*} next
+ * Middleware tuntemattomille reiteille (404).
+ * Kutsutaan kun mikään reitti ei täsmää pyyntöön.
+ * @param {Request} req
+ * @param {Response} res
+ * @param {NextFunction} next
  */
 const notFoundHandler = (req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
   error.status = 404;
-  next(error); // forward error to error handler
+  next(error);
 };
+
 /**
-* Custom default middleware for handling errors
-*/
+ * Yleinen virheenkäsittelijä kaikille Express-virheille.
+ * Palauttaa virheen tiedot JSON-muodossa.
+ * @param {Error} err - Virhe, sisältää status, message ja mahdolliset errors-kentät
+ * @param {Request} req
+ * @param {Response} res
+ * @param {NextFunction} next
+ */
 // eslint-disable-next-line no-unused-vars
 const errorHandler = (err, req, res, next) => {
-  res.status(err.status || 500); // default is 500 if err.status is not defined
-  res.json({
+  res.status(err.status || 500).json({
     error: {
       message: err.message,
       status: err.status || 500,
-      errors: err.errors || ''
-    }
+      errors: err.errors || '',
+    },
   });
 };
-
 
 export {validationErrorHandler, notFoundHandler, errorHandler};

@@ -1,3 +1,5 @@
+// Koodissa hyödynnetty tekoälyä Claude Sonnet v4.6 koodin rakentamiseen ja tarkistamiseen, sekä ymmärtämiseen
+
 import {getUserById, updateUser, deleteUser} from '../models/User.js';
 
 // GET /api/users/profile - hae omat tiedot

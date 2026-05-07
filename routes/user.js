@@ -1,3 +1,5 @@
+// Koodissa hyödynnetty tekoälyä Claude Sonnet v4.6 koodin rakentamiseen ja tarkistamiseen, sekä ymmärtämiseen
+
 import {Router} from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
 import {getProfile, updateProfile, deleteAccount} from '../controllers/userController.js';

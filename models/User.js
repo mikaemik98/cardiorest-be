@@ -1,3 +1,5 @@
+// Koodissa hyödynnetty tekoälyä Claude Sonnet v4.6 koodin rakentamiseen ja tarkistamiseen, sekä ymmärtämiseen
+
 import pool from '../database/db.js';
 
 // Haetaan käyttäjä sähköpostin perusteella
@@ -100,12 +102,11 @@ const deleteUser = async (id) => {
      const sql = 'SELECT * FROM users WHERE email=?';
      const params = [email];
      const [rows] = await pool.execute(sql, params);
-     // console.log(rows);
-     // if nothing is found with the user id, result array is empty []
+     // Jos user_id:llä ei löydy mitään, tulos on tyhjä []
      if (rows.length === 0) {
        return {error: 404, message: 'user not found'};
      }
-     // Remove password property from result
+     // Poistetaan salasana palautuvasta objektista tietoturvan vuoksi
      delete rows[0].password;
      return rows[0];
    } catch (error) {

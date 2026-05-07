@@ -1,3 +1,5 @@
+// Koodissa hyödynnetty tekoälyä Claude Sonnet v4.6 koodin rakentamiseen ja tarkistamiseen, sekä ymmärtämiseen
+
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import {findUserByEmail, addUser} from '../models/User.js';

@@ -2,6 +2,7 @@
 import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 
+// Ladataan muuttujat .env-tiedostosta
 dotenv.config();
 
 const pool = mysql.createPool({

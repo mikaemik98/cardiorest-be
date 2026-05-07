@@ -1,3 +1,5 @@
+// Koodissa hyödynnetty tekoälyä Claude Sonnet v4.6 koodin rakentamiseen ja tarkistamiseen, sekä ymmärtämiseen
+
 import {Router} from 'express';
 import {postRegister, postLogin} from '../controllers/authController.js';
 import {postLogin as kubiosPostLogin, getMe} from '../controllers/kubios-auth-controller.js';

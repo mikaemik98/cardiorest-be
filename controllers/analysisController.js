@@ -1,3 +1,5 @@
+// Koodissa hyödynnetty tekoälyä Claude Sonnet v4.6 koodin rakentamiseen ja tarkistamiseen, sekä ymmärtämiseen
+
 import fetch from 'node-fetch';
 import { saveMeasurement } from '../models/Measurement.js';
 import { saveAnalysis } from '../models/Analysis.js';
