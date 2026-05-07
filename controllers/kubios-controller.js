@@ -248,8 +248,13 @@ const getTimevaryingData = async (req, res, next) => {
         ? JSON.parse(row.timevarying_data)
         : row.timevarying_data;
 
+    const recordedAt =
+      row.recorded_at instanceof Date
+        ? row.recorded_at.toISOString().slice(0, 19)
+        : String(row.recorded_at).replace(' ', 'T');
+
     return res.json({
-      recorded_at: row.recorded_at,
+      recorded_at: recordedAt,
       readiness: row.readiness,
       rmssd_ms: row.rmssd_ms,
       timevarying: tv,
