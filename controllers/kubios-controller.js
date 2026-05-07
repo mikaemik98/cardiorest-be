@@ -248,12 +248,8 @@ const getTimevaryingData = async (req, res, next) => {
         ? JSON.parse(row.timevarying_data)
         : row.timevarying_data;
 
-    // Lisää +3h offset UTC → Suomi
-    const recordedAtDate = new Date(row.recorded_at);
-    recordedAtDate.setHours(recordedAtDate.getHours() - 3);
-
     return res.json({
-      recorded_at: recordedAtDate.toISOString(),
+      recorded_at: row.recorded_at,
       readiness: row.readiness,
       rmssd_ms: row.rmssd_ms,
       timevarying: tv,
