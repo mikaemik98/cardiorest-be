@@ -1,157 +1,190 @@
-# CardioRest BE - Backend
-HUOM! Readme tehty Claude tekoälyn avulla
-CardioRest on terveystietokeskus, joka keräää ja analysoi sydämen vaihtelutietoja (HRV) Kubiosin API:n kautta.
+# CardioRest — Backend
 
-## Tekniikat
-- **Node.js / Express** - Backend framework
-- **Sequelize** - ORM ja tietokanta-mallit
-- **JWT (JSON Web Tokens)** - Käyttäjän autentikointi
-- **Kubios API** - HRV ja terveystietojen haku
-- **CORS** - Cross-Origin Resource Sharing
-
-## Asennus ja käynnistys
-1. `npm install` - Asenna riippuvuudet
-2. Aseta `.env` tiedosto (DB_URL, JWT_SECRET, Kubios kredentiaalit)
-3. `node init-db.js` - Alusta tietokanta
-4. `npm start` - Käynnistä palvelin (portti 3000)
+HRV-pohjainen unenlaadun seurantasovellus — backend.
+Metropolia Ammattikorkeakoulu | Ohjelmistotestaus | Projektiryhmä 1
 
 ---
 
-##  API Endpointit
+## Projektin kuvaus
 
-### Autentikointi (Authentication)
-Nämä endpointit eivät vaadi token-autentikointia.
+CardioRest-backend toimii välittäjänä frontendin ja Kubios Cloud -analytiikkapalvelun välillä. Se käsittelee käyttäjien kirjautumisen Kubios-tunnuksilla, hakee HRV-analyysitulokset Kubios Cloud -pilvestä ja tallentaa time-varying HRV-datan sekä päiväkirjamerkinnät omaan MariaDB-tietokantaan.
 
-| Metodi | Endpoint | Kuvaus | Pyynnön data |
-|--------|----------|--------|--------------|
-| **POST** | `/api/auth/register` | Rekisteröidy uusiksi käyttäjäksi | `{ email, password, name }` |
-| **POST** | `/api/auth/login` | Kirjaudu sisään | `{ email, password }` |
+**Live-sovellus:** [cardiorest.swedencentral.cloudapp.azure.com](https://cardiorest.swedencentral.cloudapp.azure.com)
 
-**Login-vastaus sisältää Bearer-tokenin:**
-```json
-{
-  "token": "eyJhbGc...",
-  "userId": 1
-}
-```
-
-### Käyttäjäprofiili (Users) 
-Kaikki nämä endpointit vaativat Bearer-tokenin headerissa: `Authorization: Bearer <token>`
-
-| Metodi | Endpoint | Kuvaus |
-|--------|----------|--------|
-| **GET** | `/api/users/profile` | Hae oman profiilin tiedot |
-| **PATCH** | `/api/users/profile` | Päivitä profiilitietoja (esim. nimi, sähköposti) |
-| **DELETE** | `/api/users/profile` | Poista käyttäjätili (oikeudet poistuvat) |
-
-### Kubios HRV-data 🫀 (Users) 
-Nämä endpointit hakevat sydämen vaihtelutietoja Kubiosin API:sta. Vaativat Bearer-tokenin.
-
-| Metodi | Endpoint | Kuvaus |
-|--------|----------|--------|
-| **GET** | `/api/kubios/user-data` | Hae käyttäjän HRV-mittaukset ja analyysit |
-| **GET** | `/api/kubios/user-info` | Hae käyttäjän perustiedot Kubioksesta |
+**API-dokumentaatio:** [api-dokumentaatio.html](./api-dokumentaatio.html)
 
 ---
 
-##  Kuinka kirjautuminen toimii
+## Teknologiat
 
-### 1. Rekisteröityminen
+| Teknologia | Versio | Käyttötarkoitus                   |
+| ---------- | ------ | --------------------------------- |
+| Node.js    | 20+    | Runtime                           |
+| Express    | 4.x    | REST API -framework               |
+| MariaDB    | 10.x   | Tietokanta                        |
+| mysql2     | 3.x    | Tietokantayhteys                  |
+| JWT        | —      | Käyttäjän autentikointi           |
+| node-fetch | 3.x    | HTTP-pyynnöt Kubios Cloud API:lle |
+| dotenv     | —      | Ympäristömuuttujat                |
+
+---
+
+## Asennus
+
+### Vaatimukset
+
+- Node.js 20+
+- MariaDB
+
+### Kloonaus ja asennus
+
 ```bash
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "email": "testi@example.com",
-  "password": "salasana123",
-  "name": "Testi Käyttäjä"
-}
+git clone https://github.com/mikaemik98/cardiorest-be.git
+cd cardiorest-be
+npm install
 ```
 
-### 2. Kirjautuminen (Login)
-```bash
-POST /api/auth/login
-Content-Type: application/json
+## Tietokantarakenne
 
-{
-  "email": "testi@example.com",
-  "password": "salasana123"
-}
+![Tietokantakaavio](./docs/database-schema.png)
+
+### Ympäristömuuttujat
+
+Luo `.env` tiedosto projektin juureen:
+
+```bash
+# Palvelin
+PORT=3000
+JWT_SECRET=salainen_avain
+JWT_EXPIRES_IN=1h
+
+# Tietokanta
+DB_HOST=localhost
+DB_USER=cardiorest
+DB_PASSWORD=salasana
+DB_NAME=cardiorest
+
+# Kubios Cloud API — tunnukset saadaan Kubios-tiimiltä
+KUBIOS_API_URI=ks. Kubios-dokumentaatio
+KUBIOS_LOGIN_URL=ks. Kubios-dokumentaatio
+KUBIOS_REDIRECT_URI=ks. Kubios-dokumentaatio
+KUBIOS_CLIENT_ID=ks. Kubios-tiimi
+KUBIOS_USER_AGENT=cardiorest/1.0
+
+# Kubios Analytics — time-varying HRV-analyysi
+KUBIOS_USERNAME_2=kubios_kayttaja@email.fi
+KUBIOS_PASSWORD_2=salasana
+KUBIOS_CLIENT_ID_2=ks. Kubios-tiimi
+KUBIOS_CLIENT_SECRET=ks. Kubios-tiimi
+TOKEN_URL=ks. Kubios-dokumentaatio
+ANALYZE_URL=ks. Kubios-dokumentaatio
+KUBIOS_API_KEY=ks. Kubios-tiimi
 ```
 
-**Vastaus:**
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "userId": 1
-}
+### Tietokannan alustus
+
+```bash
+mysql -u root -p < schema.sql
 ```
 
-### 3. Tokenin käyttö
-Jokaiseen turvattuun pyyntöön lisää token Authorization-headeriin:
+### Kehityspalvelin
+
 ```bash
-GET /api/users/profile
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+npm run dev
+```
+
+### Tuotanto (PM2)
+
+```bash
+pm2 start app.js --name cardiorest-be
+pm2 save
 ```
 
 ---
 
-##  Kehitystyö
+## API-reitit
 
-### Valmiit ominaisuudet
--  Käyttäjän rekisteröityminen (`POST /api/auth/register`)
--  Käyttäjän kirjautuminen (`POST /api/auth/login`)
--  Profiilin haku (`GET /api/users/profile`)
--  Profiilin päivitys (`PATCH /api/users/profile`)
--  Tilin poistaminen (`DELETE /api/users/profile`)
--  Kubios HRV-datan haku (`GET /api/kubios/user-data`)
--  Kubios käyttäjätietojen haku (`GET /api/kubios/user-info`)
--  JWT-autentikointi middleware
+Täydellinen API-dokumentaatio: **[api-dokumentaatio.html](./api-dokumentaatio.html)**
 
-### Tänään tehty (26.3.2026)
--  Kaikki POST, GET ja DELETE reitit integroitu
--  Bearer token -autentikointi korjattu vertailun kanssa
--  Kubios datahaku integroitu
-- Frontend test HTML luotu (`frontend/index.html`)
-- README päivitetty täydellisellä dokumentaatiolla
+### Autentikointi
 
----
+| Metodi | Reitti            | Kuvaus                      |
+| ------ | ----------------- | --------------------------- |
+| POST   | `/api/auth/login` | Kirjaudu Kubios-tunnuksilla |
 
-##  Frontend testi (HTML)
+### Kubios HRV-data
 
-### Sijainti
-`frontend/index.html` - Testisivun frontend HRV-datan visualisointiin
+| Metodi | Reitti                         | Kuvaus                                    |
+| ------ | ------------------------------ | ----------------------------------------- |
+| GET    | `/api/kubios/user-data`        | Hae HRV-mittaukset Kubios-pilvestä        |
+| GET    | `/api/kubios/user-info`        | Hae käyttäjäprofiili Kubios-pilvestä      |
+| GET    | `/api/kubios/timevarying`      | Hae time-varying HRV-data tietokannasta   |
+| POST   | `/api/kubios/sync-timevarying` | Synkronoi time-varying data manuaalisesti |
 
-### Kuinka käyttää
-1. Avaa `frontend/index.html` selaimessa
-2. Kirjaudu sisään backend-palvelun kautta (`POST /api/auth/login`)
-3. Kopioi vastauksesta saatava **Bearer token**
-4. Klikkaa "Hae uusimmat mittaukset" -nappia frontendissä
-5. Liitä token kehotteeseen
-6. Näet HRV-mittaukset kaavioina ja taulukkoina:
-   -  Readiness-kaavio (viimeiset 20 mittausta)
-   -  Recovery-kaavio (viimeiset 20 mittausta)
-   -  Sydämenlyöntitiheys (HR bpm) -kuvaaja
-   -  Yksityiskohtainen mittaustaulukko
+### Päiväkirja
 
-**Esimerkki tokentin liittämisestä:**
-- Kehotus: "Anna Bearer token (login:stä kopioitu):"
-- Kirjoita: `eJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` (pelkkä token ilman "Bearer"-sanaa)
+| Metodi | Reitti           | Kuvaus                   |
+| ------ | ---------------- | ------------------------ |
+| GET    | `/api/diary`     | Hae kaikki merkinnät     |
+| POST   | `/api/diary`     | Luo uusi merkintä        |
+| GET    | `/api/diary/:id` | Hae yksittäinen merkintä |
+| PATCH  | `/api/diary/:id` | Päivitä merkintä         |
+| DELETE | `/api/diary/:id` | Poista merkintä          |
 
-### API-pyynnöt joita frontend käyttää
-```bash
-# Kirjautuminen
-POST http://127.0.0.1:3000/api/auth/login
-{ "email": "...", "password": "..." }
+Kaikki reitit paitsi `/api/auth/login` vaativat JWT-tokenin:
 
-# HRV-datan haku (vaatii tokenin)
-GET http://127.0.0.1:3000/api/kubios/user-data
+```
 Authorization: Bearer <token>
 ```
 
 ---
 
-##  Testaaminen
+## Tietokantarakenne
 
-Katso `test/test-requests.http` tiedosto REST-pyynnön esimerkeille.
+```sql
+users
+  id, name, email, password_hash, role, created_at
 
+measurements
+  id, user_id, recorded_at, duration_seconds, rri_data
+
+analyses
+  id, measurement_id, readiness, rmssd_ms, sdnn_ms,
+  pns_index, sns_index, stress_index, mean_hr_bpm,
+  artefact_level, timevarying_data, created_at
+
+diary_entries
+  id, user_id, entry_date, content, mood, created_at
+```
+
+---
+
+## Time-varying HRV — toimintaperiaate
+
+Time-varying HRV-analyysi synkronoidaan automaattisesti kun Elsi (toinen Kubios-käyttäjä) kirjautuu sovellukseen:
+
+1. Backend kirjautuu Elsin Kubios-tunnuksilla
+2. Hakee kovakoodatun yönyli mittauksen PPI-raakadatan (`TARGET_MEASURE_ID`)
+3. Ajaa Kubios Analytics API:lla time-varying analyysin (60s ikkuna, 30s siirto)
+4. Tallentaa tuloksen tietokantaan
+
+> **HUOM:** `TARGET_MEASURE_ID` on tilapäinen ratkaisu — korvaa dynaamisella logiikalla jatkokehityksessä.
+
+---
+
+## Tunnetut ongelmat
+
+- `TARGET_MEASURE_ID` on kovakoodattu — time-varying synkronointi hakee aina saman mittauksen
+- Kubios Analytics API:lla päiväkohtainen rate limit — liian moni kirjautuminen lyhyessä ajassa johtaa 429-virheeseen
+- Välimuisti estää uudelleensynkronoinnin samana päivänä (`DATE(recorded_at) = CURDATE()`)
+
+---
+
+## Ryhmä
+
+| Nimi            | Vastuu                              |
+| --------------- | ----------------------------------- |
+| Markus Kauremaa | Backend + Tietokanta                |
+| Mikael Mikkola  | Frontend + Kubios-integraatio ja UI |
+| Moumen Flih     | Frontend + HRV-sivu                 |
+| Daniil Pavliuk  | Backend + Termistö-sivu             |

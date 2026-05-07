@@ -1,19 +1,11 @@
 import fetch from 'node-fetch';
 import {v4 as uuidv4} from 'uuid';
 import pool from '../database/db.js';
-import fs from 'fs';
-// import {customError} from '../middlewares/error-handler.js';
 
-// Kubios API base URL should be set in .env
 const baseUrl = process.env.KUBIOS_API_URI;
 
 /**
- * Get user data from Kubios API example
- * TODO: Implement error handling
- * @async
- * @param {Request} req Request object including Kubios id token
- * @param {Response} res
- * @param {NextFunction} next
+ * Hakee käyttäjän HRV-tulokset Kubios Cloud -palvelusta
  */
 const getUserData = async (req, res, next) => {
   const {kubiosIdToken} = req.user;
@@ -22,30 +14,14 @@ const getUserData = async (req, res, next) => {
   headers.append('Authorization', kubiosIdToken);
 
   const response = await fetch(
-    // TODO: set the from date more sophisticated way
-    // in this example, data from 1.1.2024 is requested and hardcoded in the URL,
-    // but it should be dynamic based on for example request parameters or some other date handling logic
     baseUrl + '/result/self?from=2024-01-01T00%3A00%3A00%2B00%3A00',
-    {
-      method: 'GET',
-      headers: headers,
-    },
+    {method: 'GET', headers},
   );
-  const results = await response.json();
-
-  // Kubiokselta saatua dataa voi käsitellä (palvelipuolella) tässä
-  // ennen responsen lähettämistä client-sovellukselle
-
-  return res.json(results);
+  return res.json(await response.json());
 };
 
 /**
- * Get user info from Kubios API example
- * TODO: Implement error handling
- * @async
- * @param {Request} req Request object including Kubios id token
- * @param {Response} res
- * @param {NextFunction} next
+ * Hakee käyttäjän profiilin Kubios Cloud -palvelusta
  */
 const getUserInfo = async (req, res, next) => {
   const {kubiosIdToken} = req.user;
@@ -55,13 +31,15 @@ const getUserInfo = async (req, res, next) => {
 
   const response = await fetch(baseUrl + '/user/self', {
     method: 'GET',
-    headers: headers,
+    headers,
   });
-  const userInfo = await response.json();
-  return res.json(userInfo);
+  return res.json(await response.json());
 };
 
-// kirjaudu KUBIOS_USERNAME_2 tunnuksilla
+/**
+ * Kirjautuu Kubios-palveluun KUBIOS_USERNAME_2 tunnuksilla
+ * ja palauttaa id_token -tunnisteen
+ */
 const loginUser2 = async () => {
   const csrf = uuidv4();
   const searchParams = new URLSearchParams();
@@ -88,24 +66,25 @@ const loginUser2 = async () => {
   if (location.includes('login?null'))
     throw new Error('loginUser2: väärät tunnukset');
 
-  const hashPart = location.split('#')[1];
-  const params = new URLSearchParams(hashPart);
+  const params = new URLSearchParams(location.split('#')[1]);
   const idToken = params.get('id_token');
   if (!idToken) throw new Error('loginUser2: id_token puuttuu');
 
   return idToken;
 };
 
+/**
+ * Synkronoi time-varying HRV-datan Kubios Cloud -palvelusta tietokantaan.
+ * Hakee kovakoodatun TARGET_MEASURE_ID -mittauksen PPI/RRI-raakadatan,
+ * ajaa Kubios Analytics -analyysin ja tallentaa tuloksen.
+ * HUOM: TARGET_MEASURE_ID on tilapäinen ratkaisu — korvaa dynaamisella logiikalla.
+ */
 const syncTimeVaryingData = async (req, res, next) => {
   try {
     const localUserId = req.user.userId;
 
-    // 1. Kirjaudu Elsin tunnuksilla
-    console.log('Kirjaudutaan KUBIOS_USERNAME_2 tunnuksilla');
     const idToken = await loginUser2();
-    console.log('Login onnistui');
 
-    // 2. Hae mittauslista
     const measRes = await fetch(
       baseUrl + '/measure/self/session?from=2024-01-01T00%3A00%3A00%2B00%3A00',
       {
@@ -116,21 +95,19 @@ const syncTimeVaryingData = async (req, res, next) => {
       },
     );
     const measData = await measRes.json();
-    console.log('Mittauksia löytyi:', measData.measures?.length ?? 0);
 
     if (!measData.measures?.length) {
       return res.status(404).json({error: 'Ei mittauksia saatavilla'});
     }
 
-    // 3. Järjestä uusimmasta vanhimpaan ja ota viimeisin
-    const sorted = measData.measures.sort(
-      (a, b) => new Date(b.measured_timestamp) - new Date(a.measured_timestamp),
+    // Haetaan kovakoodattu yönyli mittaus
+    // TODO: korvata dynaamisella logiikalla joka hakee pisimmän mittauksen
+    const TARGET_MEASURE_ID = '48a15014-3f47-44f6-bb86-cf450f757399';
+    const latest = measData.measures.find(
+      (m) => m.measure_id === TARGET_MEASURE_ID,
     );
-    const latest = sorted[0];
-    console.log('Viimeisin mittaus:', latest.measured_timestamp);
-    console.log('measure_id:', latest.measure_id);
+    if (!latest) return res.status(404).json({error: 'Mittausta ei löydy'});
 
-    // 4. Hae yksittäinen mittaus data_url:n saamiseksi
     const detailRes = await fetch(
       baseUrl + `/measure/self/session/${latest.measure_id}`,
       {
@@ -141,66 +118,41 @@ const syncTimeVaryingData = async (req, res, next) => {
       },
     );
     const detailData = await detailRes.json();
-    console.log('Detail status:', detailData.status);
-    console.log(
-      'detailData.measure:',
-      JSON.stringify(detailData.measure, null, 2),
-    );
-    console.log(
-      'channels:',
-      JSON.stringify(detailData.measure?.channels, null, 2),
-    );
-    console.log(
-      'Kaikki channels:',
-      detailData.measure.channels.map((c) => ({
-        type: c.type,
-        has_data_url: !!c.data_url,
-      })),
-    );
 
-    // 5. Hae RRI-kanavan data_url
     const rriChannel = detailData.measure?.channels?.find(
-      (c) => c.type === 'PPI',
+      (c) => c.type === 'RRI' || c.type === 'PPI',
     );
     const dataUrl = rriChannel?.data_url;
-    //console.log('data_url:', dataUrl ? dataUrl.substring(0, 60) : 'PUUTTUU');
+    if (!dataUrl) return res.status(404).json({error: 'RRI data_url puuttuu'});
 
-    if (!dataUrl) {
-      return res.status(404).json({error: 'RRI data_url puuttuu'});
-    }
-
-    // 6. Hae RRI-raakadata
-    const rriRes = await fetch(dataUrl);
-    const rriBuffer = await rriRes.arrayBuffer();
+    // Pura PPI/RRI binääridata
+    const rriBuffer = await (await fetch(dataUrl)).arrayBuffer();
     const buffer = Buffer.from(rriBuffer);
     const rri = [];
     for (let i = 0; i < buffer.length - 1; i += 2) {
       rri.push(buffer.readUInt16LE(i));
     }
-    console.log('RRI-arvoja:', rri.length);
 
-    // 7. Hae analytics access token
-    console.log('TOKEN_URL:', process.env.TOKEN_URL);
-    const tokenRes = await fetch(process.env.TOKEN_URL, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: new URLSearchParams({
-        client_id: process.env.KUBIOS_CLIENT_ID_2,
-        client_secret: process.env.KUBIOS_CLIENT_SECRET,
-        grant_type: 'client_credentials',
-      }),
-    });
-    const tokenData = await tokenRes.json();
-    const accessToken = tokenData.access_token;
-    if (!accessToken) throw new Error('access_token puuttuu');
-    console.log('Access token saatu');
+    // Hae Kubios Analytics access token
+    const tokenData = await (
+      await fetch(process.env.TOKEN_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({
+          client_id: process.env.KUBIOS_CLIENT_ID_2,
+          client_secret: process.env.KUBIOS_CLIENT_SECRET,
+          grant_type: 'client_credentials',
+        }),
+      })
+    ).json();
 
-    // 8. Aja timevarying-analyysi
-    console.log('ANALYZE_URL:', process.env.ANALYZE_URL);
+    if (!tokenData.access_token) throw new Error('access_token puuttuu');
+
+    // Aja time-varying analyysi (60s ikkuna, 30s siirto)
     const analyzeRes = await fetch(process.env.ANALYZE_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${tokenData.access_token}`,
         'X-Api-Key': process.env.KUBIOS_API_KEY,
         'Content-Type': 'application/json',
       },
@@ -217,11 +169,11 @@ const syncTimeVaryingData = async (req, res, next) => {
         },
       }),
     });
-    const analyzeData = await analyzeRes.json();
-    console.log('Analyysi status:', analyzeData.status);
-    console.log('Analyysi response status:', analyzeRes.status);
-    console.log('Analyysi data:', JSON.stringify(analyzeData, null, 2));
 
+    // Kubios palauttaa NaN-arvoja — korvataan null:lla ennen JSON-parsintaa
+    const analyzeData = JSON.parse(
+      (await analyzeRes.text()).replace(/\bNaN\b/g, 'null'),
+    );
     if (analyzeData.status !== 'ok') {
       return res
         .status(500)
@@ -229,20 +181,11 @@ const syncTimeVaryingData = async (req, res, next) => {
     }
 
     const tv = analyzeData.analysis;
-    const timevaryingJson = {
-      labels: tv.t_hr,
-      hr: tv.hr,
-      rmssd: tv.rmssd,
-    };
+    const timevaryingJson = {labels: tv.t_hr, hr: tv.hr, rmssd: tv.rmssd};
 
-    // Muunna aikaleima MariaDB-yhteensopivaksi
-    const recordedAt = new Date(latest.measured_timestamp)
-      .toISOString()
-      .slice(0, 19)
-      .replace('T', ' ');
-    console.log('recordedAt muunnettu:', recordedAt);
+    // Säilytä alkuperäinen aikavyöhyke — ei muunneta UTC:hen
+    const recordedAt = latest.measured_timestamp.replace('T', ' ').slice(0, 19);
 
-    // 9. Tallenna measurements-tauluun
     const [measResult] = await pool.query(
       'INSERT INTO measurements (user_id, recorded_at, duration_seconds, rri_data) VALUES (?, ?, ?, ?)',
       [
@@ -252,15 +195,12 @@ const syncTimeVaryingData = async (req, res, next) => {
         JSON.stringify(rri),
       ],
     );
-    const measurementId = measResult.insertId;
 
-    // 10. Tallenna analyses-tauluun
     await pool.query(
       `INSERT INTO analyses (measurement_id, readiness, rmssd_ms, sdnn_ms, pns_index, sns_index,
-             stress_index, mean_hr_bpm, artefact_level, timevarying_data)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       stress_index, mean_hr_bpm, artefact_level, timevarying_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        measurementId,
+        measResult.insertId,
         latest.result?.readiness ?? null,
         latest.result?.rmssd_ms ?? null,
         latest.result?.sdnn_ms ?? null,
@@ -273,10 +213,9 @@ const syncTimeVaryingData = async (req, res, next) => {
       ],
     );
 
-    console.log('Tallennettu tietokantaan, measurement_id:', measurementId);
     return res.status(201).json({
       message: 'Timevarying-data tallennettu',
-      measurement_id: measurementId,
+      measurement_id: measResult.insertId,
       recorded_at: latest.measured_timestamp,
     });
   } catch (err) {
@@ -285,16 +224,18 @@ const syncTimeVaryingData = async (req, res, next) => {
   }
 };
 
-// hakee viimeisimmän timevarying-datan tietokannasta
+/**
+ * Hakee viimeisimmän time-varying HRV-analyysin tietokannasta
+ */
 const getTimevaryingData = async (req, res, next) => {
   try {
     const [rows] = await pool.query(
       `SELECT a.timevarying_data, a.readiness, a.rmssd_ms, m.recorded_at
-      FROM analyses a
-      JOIN measurements m ON a.measurement_id = m.id
-      WHERE a.timevarying_data IS NOT NULL
-      ORDER BY m.recorded_at DESC
-      LIMIT 1`,
+       FROM analyses a
+       JOIN measurements m ON a.measurement_id = m.id
+       WHERE a.timevarying_data IS NOT NULL
+       ORDER BY m.recorded_at DESC
+       LIMIT 1`,
     );
 
     if (!rows.length) {
@@ -319,9 +260,24 @@ const getTimevaryingData = async (req, res, next) => {
   }
 };
 
-// sisäinen funktio jota voidaan kutsua suoraan ilman req/res
+/**
+ * Sisäinen funktio jota kutsutaan automaattisesti kun Elsi kirjautuu.
+ * Synkronoi time-varying HRV-datan ilman req/res-objekteja.
+ * HUOM: TARGET_MEASURE_ID on tilapäinen ratkaisu.
+ */
 const syncTimevaryingDataInternal = async (localUserId) => {
-  console.log('Kirjaudutaan KUBIOS_USERNAME_2 tunnuksilla');
+  // Tarkista onko jo tänään synkronoitu
+  const [existing] = await pool.query(
+    `SELECT id FROM measurements 
+     WHERE user_id = ? AND DATE(recorded_at) = CURDATE()
+     ORDER BY recorded_at DESC LIMIT 1`,
+    [localUserId],
+  );
+  if (existing.length > 0) {
+    console.log('Tänään jo synkronoitu, ohitetaan');
+    return;
+  }
+
   const idToken = await loginUser2();
 
   const measRes = await fetch(
@@ -333,15 +289,15 @@ const syncTimevaryingDataInternal = async (localUserId) => {
       },
     },
   );
-
   const measData = await measRes.json();
-  if (!measData.measures?.length) throw new Error('Ei mittauksia');
 
-  const sorted = measData.measures.sort(
-    (a, b) => new Date(b.measured_timestamp) - new Date(a.measured_timestamp),
+  // Haetaan kovakoodattu yönyli mittaus
+  // TODO: korvata dynaamisella logiikalla
+  const TARGET_MEASURE_ID = '48a15014-3f47-44f6-bb86-cf450f757399';
+  const latest = measData.measures.find(
+    (m) => m.measure_id === TARGET_MEASURE_ID,
   );
-
-  const latest = sorted[0];
+  if (!latest) throw new Error('Mittausta ei löydy');
 
   const detailRes = await fetch(
     baseUrl + `/measure/self/session/${latest.measure_id}`,
@@ -355,36 +311,34 @@ const syncTimevaryingDataInternal = async (localUserId) => {
   const detailData = await detailRes.json();
 
   const ppiChannel = detailData.measure?.channels?.find(
-    (c) => c.type === 'PPI',
+    (c) => c.type === 'PPI' || c.type === 'RRI',
   );
-  const dataUrl = ppiChannel?.data_url;
-  if (!dataUrl) throw new Error('data_url puuttuu');
+  if (!ppiChannel?.data_url) throw new Error('data_url puuttuu');
 
-  const rriRes = await fetch(dataUrl);
-  const rriBuffer = await rriRes.arrayBuffer();
+  const rriBuffer = await (await fetch(ppiChannel.data_url)).arrayBuffer();
   const buffer = Buffer.from(rriBuffer);
   const rri = [];
   for (let i = 0; i < buffer.length - 1; i += 2) {
     rri.push(buffer.readUInt16LE(i));
   }
 
-  const tokenRes = await fetch(process.env.TOKEN_URL, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    body: new URLSearchParams({
-      client_id: process.env.KUBIOS_CLIENT_ID_2,
-      client_secret: process.env.KUBIOS_CLIENT_SECRET,
-      grant_type: 'client_credentials',
-    }),
-  });
-  const tokenData = await tokenRes.json();
-  const accessToken = tokenData.access_token;
-  if (!accessToken) throw new Error('access_token puuttuu');
+  const tokenData = await (
+    await fetch(process.env.TOKEN_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({
+        client_id: process.env.KUBIOS_CLIENT_ID_2,
+        client_secret: process.env.KUBIOS_CLIENT_SECRET,
+        grant_type: 'client_credentials',
+      }),
+    })
+  ).json();
+  if (!tokenData.access_token) throw new Error('access_token puuttuu');
 
   const analyzeRes = await fetch(process.env.ANALYZE_URL, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${tokenData.access_token}`,
       'X-Api-Key': process.env.KUBIOS_API_KEY,
       'Content-Type': 'application/json',
     },
@@ -401,16 +355,16 @@ const syncTimevaryingDataInternal = async (localUserId) => {
       },
     }),
   });
-  const analyzeData = await analyzeRes.json();
+
+  const analyzeData = JSON.parse(
+    (await analyzeRes.text()).replace(/\bNaN\b/g, 'null'),
+  );
   if (analyzeData.status !== 'ok') throw new Error('Analyysi epäonnistui');
 
   const tv = analyzeData.analysis;
   const timevaryingJson = {labels: tv.t_hr, hr: tv.hr, rmssd: tv.rmssd};
 
-  const recordedAt = new Date(latest.measured_timestamp)
-    .toISOString()
-    .slice(0, 19)
-    .replace('T', ' ');
+  const recordedAt = latest.measured_timestamp.replace('T', ' ').slice(0, 19);
 
   const [measResult] = await pool.query(
     'INSERT INTO measurements (user_id, recorded_at, duration_seconds, rri_data) VALUES (?, ?, ?, ?)',
