@@ -172,6 +172,17 @@ Time-varying HRV-analyysi synkronoidaan automaattisesti kun Elsi (toinen Kubios-
 
 ---
 
+## Toteutetut toiminnallisuudet
+
+| Toiminnallisuus  | Kuvaus                                                                    |
+| ---------------- | ------------------------------------------------------------------------- |
+| Kirjautuminen    | Kubios OAuth-kirjautuminen, JWT-token palautetaan frontendille            |
+| HRV-data         | Readiness-tulokset haetaan Kubios Cloud -pilvestä                         |
+| Time-varying HRV | Automaattinen synkronointi Elsin kirjautuessa, Kubios Analytics -analyysi |
+| Päiväkirja       | CRUD-operaatiot päiväkirjamerkinnöille MariaDB:hen                        |
+| Autentikointi    | JWT-middleware suojaa kaikki reitit kirjautumista lukuun ottamatta        |
+| Azure-deployment | Apache + PM2 + HTTPS Let's Encrypt                                        |
+
 ## Tunnetut ongelmat
 
 - `TARGET_MEASURE_ID` on kovakoodattu — time-varying synkronointi hakee aina saman mittauksen
@@ -179,6 +190,17 @@ Time-varying HRV-analyysi synkronoidaan automaattisesti kun Elsi (toinen Kubios-
 - Välimuisti estää uudelleensynkronoinnin samana päivänä (`DATE(recorded_at) = CURDATE()`)
 
 ---
+
+## Referenssit
+
+- [Kubios Cloud API](https://analysis.kubioscloud.com/) — HRV-analytiikka
+- [Node.js](https://nodejs.org/) — runtime
+- [Express.js](https://expressjs.com/) — backend framework
+- [MariaDB](https://mariadb.org/) — tietokanta
+- [mysql2](https://github.com/sidorares/node-mysql2) — tietokantayhteys
+- [JWT](https://jwt.io/) — autentikointi
+- [PM2](https://pm2.keymetrics.io/) — prosessinhallinta
+- [Claude (Anthropic)](https://claude.ai/) — käytetty koodin debuggauksessa ja dokumentaation kirjoittamisen apuna
 
 ## Ryhmä
 
